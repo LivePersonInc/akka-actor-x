@@ -1,0 +1,16 @@
+<aspectj>
+
+    <aspects>
+        <aspect name="com.liveperson.interaction.infra.akka.actorx.substitute.ActorXSubstitute"/>
+        <aspect name="com.liveperson.interaction.infra.akka.actorx.substitute.ActorXRefSubstitute"/>
+        <aspect name="com.liveperson.interaction.infra.akka.actorx.substitute.ActorXContextSubstitute"/>
+    </aspects>
+
+    <weaver options="-XnoInline">
+        <include within="com.liveperson..*"/>
+        <include within="akka..*"/>
+
+        <exclude within="akka.util.ByteString"/>
+    </weaver>
+
+</aspectj>

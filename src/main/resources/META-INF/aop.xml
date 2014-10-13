@@ -1,9 +1,9 @@
 <aspectj>
 
     <aspects>
-        <aspect name="com.liveperson.interaction.infra.akka.actorx.substitute.ActorXSubstitute"/>
-        <aspect name="com.liveperson.interaction.infra.akka.actorx.substitute.ActorXRefSubstitute"/>
-        <aspect name="com.liveperson.interaction.infra.akka.actorx.substitute.ActorXContextSubstitute"/>
+        <aspect name="com.liveperson.infra.akka.actorx.substitute.ActorXSubstitute"/>
+        <aspect name="com.liveperson.infra.akka.actorx.substitute.ActorXRefSubstitute"/>
+        <aspect name="com.liveperson.infra.akka.actorx.substitute.ActorXContextSubstitute"/>
     </aspects>
 
     <weaver options="-XnoInline">

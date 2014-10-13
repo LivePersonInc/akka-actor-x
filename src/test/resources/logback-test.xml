@@ -14,23 +14,20 @@
             <!--<pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-25.25thread] [%-25.25X{akkaSource}]      %msg%n</pattern>-->
 
             <!-- 5. Correlation Id -->
-            <pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-25.25thread] [%-25.25X{akkaSource}]      %msg     |TAGS| %X{GAME} %n</pattern>
+            <!--<pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-25.25thread] [%-25.25X{akkaSource}]      %msg     |TAGS| %X{GAME} %n</pattern>-->
+            <pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-25.25X{akkaSource}]      %msg     |TAGS| %X{GAME} %n</pattern>
 
         </encoder>
     </appender>
 
-    <logger name="org.springframework" level="INFO" />
+    <logger name = "akka.actor" level = "DEBUG" />
 
-    <logger name="org.apache.camel" level="INFO" />
+    <logger name="com.liveperson.infra.akka" level="DEBUG" />
 
-    <logger name = "akka.actor" level = "INFO" />
-
-    <logger name="com.liveperson.interaction.infra.akka" level="DEBUG" />
-
-    <logger name="com.liveperson.interaction.infra.akka.actorx" level="DEBUG" />
+    <logger name="com.liveperson.infra.akka.actorx" level="DEBUG" />
 
     <!-- 4. Message Trail -->
-    <!--<logger name="com.liveperson.interaction.infra.akka.actorx.role.MessageTrailRole" level="TRACE" />-->
+    <logger name="com.liveperson.infra.akka.actorx.role.MessageTrailRole" level="TRACE" />
 
     <root>
         <level value="INFO" />

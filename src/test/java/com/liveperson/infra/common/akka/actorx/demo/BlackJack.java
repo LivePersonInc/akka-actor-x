@@ -6,7 +6,6 @@ import akka.testkit.JavaTestKit;
 import com.liveperson.infra.akka.actorx.ActorXBackStage;
 import com.liveperson.infra.akka.actorx.ActorXManuscript;
 import com.liveperson.infra.akka.actorx.header.CorrelationHeader;
-import com.liveperson.infra.akka.actorx.trapdoor.ActorSystemGraphTrapDoor;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;

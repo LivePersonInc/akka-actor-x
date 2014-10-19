@@ -22,9 +22,7 @@
 
     <logger name = "akka.actor" level = "DEBUG" />
 
-    <logger name="com.liveperson.infra.akka" level="DEBUG" />
-
-    <logger name="com.liveperson.infra.akka.actorx" level="TRACE" />
+    <logger name="com.liveperson.infra.common.akka.actorx.demo" level="TRACE" />
 
     <!-- 4. Message Trail -->
     <logger name="com.liveperson.infra.akka.actorx.role.MessageTrailRole" level="TRACE" />

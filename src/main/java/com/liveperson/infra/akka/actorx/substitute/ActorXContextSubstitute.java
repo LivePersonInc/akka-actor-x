@@ -4,7 +4,8 @@ import akka.actor.ActorContext;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import com.liveperson.infra.akka.actorx.ActorXDirector;
-import com.liveperson.infra.akka.actorx.ActorXDressingRoom;
+import com.liveperson.infra.akka.actorx.ActorXDirectorOffice;
+import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -23,13 +24,6 @@ public class ActorXContextSubstitute {
 
     private Logger logger = LoggerFactory.getLogger(ActorXContextSubstitute.class);
 
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-
-    @Pointcut("within(com.liveperson..*)")
-    public void allLpClasses() {}
-
     @Pointcut("execution(* akka.actor.ActorContext.actorOf(..))")
     public void actorOfPC() {}
 
@@ -41,19 +35,20 @@ public class ActorXContextSubstitute {
         Props props = (arguments.length > 0) ? (Props)arguments[0] : null;
         String name = (arguments.length > 1) ? (String)arguments[1] : null;
 
-        String propsActorClassName = (props != null && props.actorClass() != null) ? props.actorClass().getName() : "null";
-        logger.trace(">>> CONTEXT >>> before actorOf(propsActor # name) : {} # {}", propsActorClassName, name);
+        // Trace Logging
+        String propsActorClassName = (props != null && props.actorClass() != null) ? props.actorClass().getName() : null;
+        logger.trace("Before actorOf(propsActor # name) : {} # {}", propsActorClassName, name);
 
         try {
 
             // Before
-            ActorXDirector actorXDirector = ActorXDressingRoom.getActorXDirector();
+            ActorXDirector actorXDirector = ActorXDirectorOffice.getActorXDirector();
             if (actorXDirector != null) {
                 actorXDirector.beforeActorOf(props, name);
             }
 
             // Proceed
-            ActorRef actorRef = (ActorRef)pjp.proceed(/*args*/);
+            ActorRef actorRef = (ActorRef)pjp.proceed();
 
             // After
             if (actorXDirector != null) {
@@ -71,7 +66,7 @@ public class ActorXContextSubstitute {
             throw e;
         }
         finally {
-            logger.trace("<<< CONTEXT <<< after actorOf(propsActor # name) : {} # {}", propsActorClassName, name);
+            logger.trace("After actorOf(propsActor # name) : {} # {}", propsActorClassName, name);
         }
     }
 }

@@ -1,13 +1,14 @@
 package com.liveperson.infra.akka.actorx.substitute;
 
-import akka.actor.Actor;
-import akka.actor.ActorRef;
+import akka.actor.*;
 import com.liveperson.infra.akka.actorx.ActorXDirector;
-import com.liveperson.infra.akka.actorx.ActorXDressingRoom;
+import com.liveperson.infra.akka.actorx.ActorXDirectorOffice;
 import com.liveperson.infra.akka.actorx.ActorXManuscript;
+import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.DeclareMixin;
 import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,31 +22,13 @@ import java.lang.reflect.InvocationTargetException;
 @Aspect
 public class ActorXSubstitute {
 
-    private Logger logger = LoggerFactory.getLogger(ActorXSubstitute.class);
-
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-
-
-    // TODO Keep alive instance of actor x on this instance?
-    // TODO Instead of creating each time (performance)
+    private static Logger logger = LoggerFactory.getLogger(ActorXSubstitute.class);
 
     // TODO Keep around receive message (last received message)?
     // TODO Might help in test interrogation....
 
-    @Pointcut("within(com.liveperson..*)")
-    public void allLpClasses() {}
-
     @Pointcut("execution(* akka.actor.Actor.aroundReceive(..))")
     public void aroundReceivePC() {}
-
-    /*@Pointcut("execution(* akka.actor.Actor.aroundReceive(..)) && this(actor) && args(receive, msg)")
-    public void aroundReceivePC(Actor actor, PartialFunction<Object, BoxedUnit> receive, Object msg) {}*/
-
-
-    /*@Around("aroundReceivePC(actor, receive, msg)")
-    public Object doAround(ProceedingJoinPoint pjp, Actor actor, PartialFunction<Object, BoxedUnit> receive, Object msg) throws Throwable {*/
 
     @Around("aroundReceivePC()")
     public Object doAround(ProceedingJoinPoint pjp) throws Throwable {
@@ -63,17 +46,16 @@ public class ActorXSubstitute {
         Object[] arguments = pjp.getArgs();
         Object msg = (arguments.length > 1) ? arguments[1] : null;
 
-        /*// TODO REMOVE
-        logger.trace(">>> ACTOR >>> TARGET CLASS = {}", targetClass);
-        logger.trace(">>> ACTOR >>> THIS CLASS = {}", (pjp.getThis() == null) ? "null" : pjp.getThis().getClass().getName());*/
 
-        // TODO Configurable
-        // TODO Define packages that should be wrapped
-        // TODO ??? Is this actually all actor class that are NOT withing akka core ???
-        if (!(targetClass.startsWith("com.liveperson"))) {
+        // If actor should not be enhanced then the message should also be unwrapped before proceeding
+        if (!(ActorXConfig.included(targetClass, ActorXConfig.getEnhancedPackagesInclude(), ActorXConfig.getEnhancedPackagesExclude()))) {
 
                 if (msg != null && msg instanceof ActorXManuscript) {
-                    logger.trace(">>> ACTOR >>> Target actor is not in actor-x scope, un-wrapping manuscript and sending original message [{}]", targetClass);
+
+                    // Trace Logging
+                    logger.trace("Target actor is not in actor-x scope, un-wrapping manuscript and sending original message [{}]", targetClass);
+
+                    // Unwrap
                     Object[] args = new Object[] {arguments[0], ((ActorXManuscript)msg).getMessage()};
                     return pjp.proceed(args);
                 }
@@ -82,12 +64,25 @@ public class ActorXSubstitute {
                 }
         }
 
-        logger.trace(">>> ACTOR [{}] >>> before aroundReceive(msg) : {}", actorName, msg);
+
+        // Trace Logging
+        logger.trace("[{}] before aroundReceive(msg) : {}", actorName, msg);
+
+
+        ActorXDirector actorXDirector = null;
         try {
 
             // Setup actor x
-            ActorXDressingRoom.setActorXDirector(new ActorXDirector(actor));
-            ActorXDirector actorXDirector = ActorXDressingRoom.getActorXDirector();
+            // Get director from actor.context, or create it if does not exist
+            ActorContext context = actor.context();
+            ActorXHiddenRoom actorXHiddenRoom = (ActorXHiddenRoom)context;
+            actorXDirector = actorXHiddenRoom.getActorXDirector();
+            if (actorXDirector == null) {
+                actorXDirector = new ActorXDirector(actor);
+                actorXHiddenRoom.setActorXDirector(actorXDirector);
+            }
+            actorXDirector.setup(); // DO NOT FORGET CLEAN
+            ActorXDirectorOffice.setActorXDirector(actorXDirector);
 
             // Before
             Object unwrappedMessage = actorXDirector.beforeReceive(msg);
@@ -96,12 +91,10 @@ public class ActorXSubstitute {
             Object[] args = {arguments[0], unwrappedMessage};
             Object result = pjp.proceed(args);
 
+            // TODO In general, should after be here or in finally?
+            // TODO             should there be an afterReceiveWithException instead?
             // After
             actorXDirector.afterReceive(unwrappedMessage);
-
-            // Clean actor x
-            ActorXDressingRoom.removeActorXDirector();
-            actorXDirector.clean();
 
             // Result
             return result;
@@ -114,8 +107,59 @@ public class ActorXSubstitute {
             throw e;
         }
         finally {
-            logger.trace("<<< ACTOR [{}] <<< after aroundReceive(msg) : {}", actorName, msg);
+
+            // Clean actor x
+            ActorXDirectorOffice.removeActorXDirector();
+            if (actorXDirector != null) {
+                actorXDirector.clean(); // DO NOT FORGET SETUP
+            }
+
+            // Trace Logging
+            logger.trace("[{}] after aroundReceive(msg) : {}", actorName, msg);
         }
     }
+
+
+
+    @DeclareMixin("akka.actor.ActorCell")
+    public static ActorXHiddenRoom actorXHiddenRoomMixin(Object actorCell) {
+        tracePrintCreation(actorCell);
+        return new ActorXHiddenRoomImpl();
+    }
+
+    // Trace logging for debugging
+    private static void tracePrintCreation(Object actorCell) {
+        if (logger.isTraceEnabled()) {
+            if (actorCell != null && actorCell instanceof ActorCell) {
+                String cellPath = null;
+                ActorCell cell = (ActorCell) actorCell;
+                InternalActorRef self = cell.self();
+                if (self != null && self.path() != null) {
+                    cellPath = self.path().name();
+                }
+                logger.trace("[{}] creating actor-x hidden room", cellPath);
+            }
+        }
+    }
+
+    public interface ActorXHiddenRoom {
+        ActorXDirector getActorXDirector();
+        void setActorXDirector(ActorXDirector actorXDirector);
+    }
+
+    public static class ActorXHiddenRoomImpl implements ActorXHiddenRoom {
+        private ActorXDirector actorXDirector;
+
+        @Override
+        public ActorXDirector getActorXDirector() {
+            return this.actorXDirector;
+        }
+
+        @Override
+        public void setActorXDirector(ActorXDirector actorXDirector) {
+            this.actorXDirector = actorXDirector;
+        }
+    }
+
 
 }

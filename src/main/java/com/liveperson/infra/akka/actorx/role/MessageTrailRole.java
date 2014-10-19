@@ -3,6 +3,7 @@ package com.liveperson.infra.akka.actorx.role;
 import akka.actor.Actor;
 import akka.actor.ActorRef;
 import com.liveperson.infra.akka.actorx.ActorXManuscript;
+import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import com.liveperson.infra.akka.actorx.header.Manuscript;
 import com.liveperson.infra.akka.actorx.header.MessageTrailHeader;
 import org.slf4j.Logger;
@@ -18,10 +19,16 @@ import java.util.List;
 public class MessageTrailRole implements Role {
 
     private Logger logger = LoggerFactory.getLogger(MessageTrailRole.class);
-    private static final short MAX_TRAIL_SIZE = 20; // TODO configurable
+
+    // TODO HOW TO DEAL WITH IMMUTABLE/MUTABLE (copy messageTrail?)
 
     // TODO Use better data structure (keep from inside jdk?)
     private LinkedList<MessageTrailHeader.Trail> messageTrail;
+    private String actorPackage;
+
+    public MessageTrailRole(String actorPackage) {
+        this.actorPackage = actorPackage;
+    }
 
     @Override
     public void beforeReceive(ActorRef from, Object message, Actor self) {
@@ -44,12 +51,26 @@ public class MessageTrailRole implements Role {
 
         // Add to trail
         this.messageTrail.addFirst(current);
-        if (this.messageTrail.size() > MAX_TRAIL_SIZE) {
+        if (this.messageTrail.size() > ActorXConfig.getRoleMessageTrailMaxHistory()) {
             this.messageTrail.removeLast();
         }
 
-        // TODO Only if some configuration flag is open then print the following
-        logger.trace(MessageTrailHeader.getMessageTrailString(this.messageTrail));
+        // Trace logging
+        if (logger.isTraceEnabled() &&
+            ActorXConfig.isRoleMessageTrailTraceLogging()) {
+
+            // Trace log only if
+            // 1. actor class package is included
+            // 2. message class package is included
+            Object messageToQuery = (message instanceof ActorXManuscript) ? ((ActorXManuscript)message).getMessage() : message;
+            String messageClass = messageToQuery.getClass().getName();
+            if (ActorXConfig.included(this.actorPackage, ActorXConfig.getRoleMessageTrailPackagesInclude(), ActorXConfig.getRoleMessageTrailPackagesExclude()) &&
+                ActorXConfig.included(messageClass, ActorXConfig.getRoleMessageTrailMessagesInclude() ,ActorXConfig.getRoleMessageTrailMessagesExclude())) {
+
+                // Trace log
+                logger.trace(MessageTrailHeader.getMessageTrailString(this.messageTrail));
+            }
+        }
     }
 
     @Override

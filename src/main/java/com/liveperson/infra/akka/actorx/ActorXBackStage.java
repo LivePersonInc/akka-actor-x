@@ -1,8 +1,8 @@
 package com.liveperson.infra.akka.actorx;
 
+import akka.actor.ActorRef;
 import com.liveperson.infra.akka.actorx.header.MessageTrailHeader;
 
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -20,7 +20,7 @@ public class ActorXBackStage {
     }
 
     public static List<MessageTrailHeader.Trail> getMessageTrail() {
-        ActorXDirector actorXDirector = ActorXDressingRoom.getActorXDirector();
+        ActorXDirector actorXDirector = ActorXDirectorOffice.getActorXDirector();
         if (actorXDirector != null) {
             return actorXDirector.getMessageTrail();
         }

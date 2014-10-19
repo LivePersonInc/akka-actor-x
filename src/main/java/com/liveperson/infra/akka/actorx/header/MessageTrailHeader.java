@@ -1,7 +1,11 @@
 package com.liveperson.infra.akka.actorx.header;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Amit Tal
@@ -9,21 +13,44 @@ import java.util.List;
  */
 public class MessageTrailHeader {
 
+    private static Logger logger = LoggerFactory.getLogger(MessageTrailHeader.class);
+
     public static final String HEADER_NAME = "MESSAGE_TRAIL";
     public static final String LINE_SEPERATOR = System.getProperty("line.separator");
 
+    // TODO HOW TO DEAL WITH IMMUTABLE/MUTABLE
 
     @SuppressWarnings("unchecked")
     public static List<Trail> getHeader(Manuscript manuscript) {
-        return (List<Trail>) manuscript.get(HEADER_NAME);
+        Map<String, Object> headers = manuscript.getHeaders();
+        if (headers != null) {
+            return (List<Trail>) headers.get(HEADER_NAME);
+        }
+        else {
+            logger.warn("Manuscript headers is null");
+            return null;
+        }
     }
 
     public static void setHeader(Manuscript manuscript, List<Trail>value) {
-        manuscript.put(HEADER_NAME, value);
+        Map<String, Object> headers = manuscript.getHeaders();
+        if (headers != null) {
+            headers.put(HEADER_NAME, value);
+        }
+        else {
+            logger.warn("Manuscript headers is null");
+        }
     }
 
     public static boolean exists(Manuscript manuscript) {
-        return manuscript.containsKey(HEADER_NAME);
+        Map<String, Object> headers = manuscript.getHeaders();
+        if (headers != null) {
+            return headers.containsKey(HEADER_NAME);
+        }
+        else {
+            logger.warn("Manuscript headers is null");
+            return false;
+        }
     }
 
 

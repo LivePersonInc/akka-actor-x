@@ -2,6 +2,7 @@ package com.liveperson.infra.akka.actorx;
 
 import akka.actor.*;
 import akka.pattern.PromiseActorRef;
+import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import com.liveperson.infra.akka.actorx.header.MessageTrailHeader;
 import com.liveperson.infra.akka.actorx.role.*;
 import com.liveperson.infra.akka.actorx.header.Manuscript;
@@ -21,7 +22,7 @@ public class ActorXDirector {
 
     // This class can keep trace of all in/out actor refs
     // It can build an internal actor web that can send internal messages
-    // TODO Should director keep track of this or should a propriatary mask do this?
+    // TODO Should director keep track of this or should a proprietary mask do this?
     private Set<ActorRef> in;
     private Set<ActorRef> out;
 
@@ -32,18 +33,20 @@ public class ActorXDirector {
         this.in = new HashSet<>();
         this.out = new HashSet<>();
         this.extendedActor = extendedActor;
-//        this.maskList = new MaskList(Collections.emptyList());
         setup();
     }
 
     public void setup() {
-        // TODO Create masks by configuration / input / headers...
-        // TODO Create masks by configuration / input / headers...
-        // TODO Create masks by configuration / input / headers...
         List<Role> roles = new ArrayList<>();
-        roles.add(new AkkaSourceMdcRole());
-        roles.add(new CorrelationRole());
-        roles.add(new MessageTrailRole());
+        if (ActorXConfig.isRoleAkkaSourceMdcActive()) {
+            roles.add(new AkkaSourceMdcRole());
+        }
+        if (ActorXConfig.isRoleCorrelationActive()) {
+            roles.add(new CorrelationRole());
+        }
+        if (ActorXConfig.isRoleMessageTrailActive()) {
+            roles.add(new MessageTrailRole(extendedActor.getClass().getName()));
+        }
         this.maskList = new RoleList(roles);
     }
 
@@ -70,8 +73,6 @@ public class ActorXDirector {
         this.maskList.afterReceive(extendedActor.sender(), msg, extendedActor);
     }
 
-    // TODO What to wrap?
-    // TODO Maybe only wrap our internal messages???
     public Object beforeSend(ActorRef recipient, Object msg, ActorRef sender) {
         recordOut(recipient);
 
@@ -80,6 +81,7 @@ public class ActorXDirector {
         if (shouldWrapWithManuscript(recipient, msg)) {
             wrappedMessage = new ActorXManuscript(msg);
         }
+
         this.maskList.beforeSend(recipient, wrappedMessage, sender);
         return wrappedMessage;
     }
@@ -98,12 +100,6 @@ public class ActorXDirector {
         this.maskList.afterActorOf(actorRef);
     }
 
-    public boolean isPartOfCast(ActorRef actorRef) {
-        return in.contains(actorRef) || out.contains(actorRef);
-    }
-
-
-
     private void recordIn(ActorRef actorRef) {
         if (actorRef != extendedActor.context().system().deadLetters()) {
             in.add(actorRef);
@@ -117,10 +113,8 @@ public class ActorXDirector {
     private boolean shouldWrapWithManuscript(ActorRef recipient, Object msg) {
         return      !(msg instanceof AutoReceivedMessage)
                 &&  !(msg instanceof Manuscript)
-                &&  !(msg instanceof AutoReceivedMessage)
                 &&  !(recipient instanceof PromiseActorRef); // akka ask pattern
     }
-
 
     // TODO CHANGE HOW THIS WORKS
     // TODO CHANGE WHERE API IS DEFINED / IMPLEMENTED

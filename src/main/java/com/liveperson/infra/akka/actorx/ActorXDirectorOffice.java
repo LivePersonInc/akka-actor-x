@@ -7,9 +7,9 @@ import org.slf4j.LoggerFactory;
  * @author Amit Tal
  * @since 9/29/2014
  */
-public class ActorXDressingRoom {
+public class ActorXDirectorOffice {
 
-    private static final Logger logger = LoggerFactory.getLogger(ActorXDressingRoom.class);
+    private static final Logger logger = LoggerFactory.getLogger(ActorXDirectorOffice.class);
     private static final ThreadLocal<ActorXDirector> storage = new InheritableThreadLocal<>();
 
     public static void setActorXDirector(ActorXDirector actorXDirector) {

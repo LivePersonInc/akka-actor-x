@@ -6,5 +6,7 @@ import java.util.Map;
  * @author Amit Tal
  * @since 10/2/2014
  */
-public interface Manuscript extends Map<String, Object> {
+public interface Manuscript {
+
+    Map<String, Object> getHeaders();
 }

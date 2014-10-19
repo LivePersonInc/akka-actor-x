@@ -3,8 +3,10 @@ package com.liveperson.infra.common.akka.actorx.demo;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.JavaTestKit;
+import com.liveperson.infra.akka.actorx.ActorXBackStage;
 import com.liveperson.infra.akka.actorx.ActorXManuscript;
 import com.liveperson.infra.akka.actorx.header.CorrelationHeader;
+import com.liveperson.infra.akka.actorx.trapdoor.ActorSystemGraphTrapDoor;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
@@ -17,7 +19,7 @@ import java.util.List;
  */
 public class BlackJack {
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
 
         int numPlayers = 3;
         FiniteDuration FINITE_DURATION = JavaTestKit.duration("3000 second");
@@ -30,9 +32,9 @@ public class BlackJack {
 
         actorSystem.shutdown();
         actorSystem.awaitTermination();
-    }
+    }*/
 
-    /*public static void main(String[] args) {
+    public static void main(String[] args) {
 
         int numGames = 3;
         FiniteDuration FINITE_DURATION = JavaTestKit.duration("3000 second");
@@ -48,7 +50,6 @@ public class BlackJack {
             // Construct
             ActorRef dealer = actorSystem.actorOf(DealerAbstractFsm.props(3), "dealer" + i);
             ActorXManuscript actorXManuscript = new ActorXManuscript(DealerAbstractFsm.START_GAME.INSTANCE);
-            CorrelationHeader.setCorrelation(actorXManuscript, "GAME", "Game-" + i);
 
             // Run
             dealer.tell(actorXManuscript, probe.getRef());
@@ -59,5 +60,5 @@ public class BlackJack {
 
         actorSystem.shutdown();
         actorSystem.awaitTermination();
-    }*/
+    }
 }

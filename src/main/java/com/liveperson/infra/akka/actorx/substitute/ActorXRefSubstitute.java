@@ -1,10 +1,9 @@
 package com.liveperson.infra.akka.actorx.substitute;
 
 import akka.actor.ActorRef;
-import akka.pattern.PromiseActorRef;
 import com.liveperson.infra.akka.actorx.ActorXDirector;
-import com.liveperson.infra.akka.actorx.ActorXDressingRoom;
-import com.liveperson.infra.akka.actorx.ActorXManuscript;
+import com.liveperson.infra.akka.actorx.ActorXDirectorOffice;
+import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -23,18 +22,8 @@ public class ActorXRefSubstitute {
 
     private Logger logger = LoggerFactory.getLogger(ActorXRefSubstitute.class);
 
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-    // TODO Change trace logging to configurable parameter (do not rely on logger log level)
-
-    /*@Pointcut("execution(* akka.actor.ActorRef.tell(..)) && this(actorRef) && args(msg, sender)")
-    public void tellPC(ActorRef actorRef, Object msg, ActorRef sender) {}*/
-
     @Pointcut("execution(* akka.actor.ActorRef.tell(..))")
     public void tellPC() {}
-
-    /*@Around("tellPC(actorRef, msg, sender)")
-    public Object aroundTell(ProceedingJoinPoint pjp, ActorRef actorRef, Object msg, ActorRef sender) throws Throwable {*/
 
     @Around("tellPC()")
     public Object aroundTell(ProceedingJoinPoint pjp) throws Throwable {
@@ -44,20 +33,17 @@ public class ActorXRefSubstitute {
         Object msg = arguments[0];
         ActorRef sender = (arguments.length > 1) ? (ActorRef)arguments[1] : null;
 
-        /*// TODO REMOVE
-        logger.trace(">>> ACTOR-REF >>> TARGET CLASS = {}", (actorRef == null) ? "null" : actorRef.getClass().getName());
-        logger.trace(">>> ACTOR-REF >>> THIS CLASS = {}", (pjp.getThis() == null) ? "null" : pjp.getThis().getClass().getName());*/
-
+        // Trace Logging
         String actorRefPath = (actorRef == null) ? "null" : actorRef.path().name();
         String senderPath = (sender == null) ? "null" : sender.path().name();
         String msgClassName = (msg == null) ? "null" : msg.getClass().getName();
-        logger.trace(">>> ACTOR-REF [{}] >>> before tell(msg # sender) : {} # {}", actorRefPath, msgClassName, senderPath);
+        logger.trace("[{}] before tell(msg # sender) : {} # {}", actorRefPath, msgClassName, senderPath);
 
         try {
 
             // Before
             Object wrappedMessage = msg;
-            ActorXDirector actorXDirector = ActorXDressingRoom.getActorXDirector();
+            ActorXDirector actorXDirector = ActorXDirectorOffice.getActorXDirector();
             if (actorXDirector != null) {
                 wrappedMessage = actorXDirector.beforeSend(actorRef, msg, sender);
             }
@@ -82,7 +68,7 @@ public class ActorXRefSubstitute {
             throw e;
         }
         finally {
-            logger.trace("<<< ACTOR-REF [{}] <<< after tell(msg # sender) : {} # {}", actorRefPath, msgClassName, senderPath);
+            logger.trace("[{}] after tell(msg # sender) : {} # {}", actorRefPath, msgClassName, senderPath);
         }
     }
 }

@@ -5,7 +5,11 @@ import akka.actor.ActorSystem;
 import akka.testkit.JavaTestKit;
 import com.liveperson.infra.akka.actorx.ActorXBackStage;
 import com.liveperson.infra.akka.actorx.ActorXManuscript;
+import com.liveperson.infra.akka.actorx.extension.ActorXExtension;
+import com.liveperson.infra.akka.actorx.extension.ActorXExtensionProvider;
 import com.liveperson.infra.akka.actorx.header.CorrelationHeader;
+import com.liveperson.infra.akka.actorx.staff.CastTraceAssistant;
+import org.junit.Assert;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
@@ -56,6 +60,15 @@ public class BlackJack {
 
         // Wait for all games to finish
         probes.stream().forEach( probe -> probe.expectMsgAnyClassOf(FINITE_DURATION, String.class) );
+
+        // Log cast
+        FiniteDuration SHORT_FINITE_DURATION = JavaTestKit.duration("3 second");
+        JavaTestKit probe = new JavaTestKit(actorSystem);
+        ActorXExtension actorXExtension = ActorXExtensionProvider.actorXExtensionProvider.get(actorSystem);
+        ActorRef castTraceActor = actorXExtension.getCastTraceActor();
+        Assert.assertNotNull("Trace actor assistant should not be null, check if cast-trace is enabled", castTraceActor);
+        castTraceActor.tell(CastTraceAssistant.LogCast.INSTANCE, probe.getRef());
+        probe.expectNoMsg(SHORT_FINITE_DURATION);
 
         actorSystem.shutdown();
         actorSystem.awaitTermination();

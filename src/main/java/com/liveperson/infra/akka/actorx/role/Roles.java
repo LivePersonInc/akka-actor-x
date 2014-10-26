@@ -10,11 +10,11 @@ import java.util.ListIterator;
  * @author Amit Tal
  * @since 9/21/2014
  */
-public class RoleList implements Role {
+public class Roles implements Role {
 
     final private List<Role> roles;
 
-    public RoleList(List<Role> roles) {
+    public Roles(List<Role> roles) {
         this.roles = roles;
     }
 

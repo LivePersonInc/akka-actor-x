@@ -4,6 +4,8 @@ import akka.actor.ActorRef;
 import com.liveperson.infra.akka.actorx.ActorXDirector;
 import com.liveperson.infra.akka.actorx.ActorXDirectorOffice;
 import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
+import com.liveperson.infra.akka.actorx.staff.AssistantUtils;
+import com.liveperson.infra.akka.actorx.staff.StaffMessage;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -39,11 +41,19 @@ public class ActorXRefSubstitute {
         String msgClassName = (msg == null) ? "null" : msg.getClass().getName();
         logger.trace("[{}] before tell(msg # sender) : {} # {}", actorRefPath, msgClassName, senderPath);
 
+        // If is internal staff messages then DO NOT delegate back into the ActorXDirector
+        // This can cause an endless loop
+        if (AssistantUtils.isInternalStaffMessage(msg)) {
+            return pjp.proceed();
+        }
+
         try {
 
             // Before
             Object wrappedMessage = msg;
-            ActorXDirector actorXDirector = ActorXDirectorOffice.getActorXDirector();
+            ActorXDirector actorXDirector = null;
+
+            actorXDirector = ActorXDirectorOffice.getActorXDirector();
             if (actorXDirector != null) {
                 wrappedMessage = actorXDirector.beforeSend(actorRef, msg, sender);
             }

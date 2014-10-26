@@ -27,10 +27,15 @@ public class ActorXSubstitute {
     // TODO Keep around receive message (last received message)?
     // TODO Might help in test interrogation....
 
+    // TODO How can I change this so we will wrap all actors EXCEPT all actor-x internal actors?
+    // TODO Currently there is one (CastTraceAssistant) but each time we add another then this needs to be updated
+    @Pointcut("target(com.liveperson.infra.akka.actorx.staff.CastTraceAssistant)")
+    public void internalActorX() {}
+
     @Pointcut("execution(* akka.actor.Actor.aroundReceive(..))")
     public void aroundReceivePC() {}
 
-    @Around("aroundReceivePC()")
+    @Around("aroundReceivePC() && !internalActorX()")
     public Object doAround(ProceedingJoinPoint pjp) throws Throwable {
 
         // Should not happen, just safety check
@@ -81,13 +86,13 @@ public class ActorXSubstitute {
                 actorXDirector = new ActorXDirector(actor);
                 actorXHiddenRoom.setActorXDirector(actorXDirector);
             }
-            actorXDirector.setup(); // DO NOT FORGET CLEAN
+            //actorXDirector.setup(); // DO NOT FORGET CLEAN
             ActorXDirectorOffice.setActorXDirector(actorXDirector);
 
             // Before
             Object unwrappedMessage = actorXDirector.beforeReceive(msg);
 
-            // proceed
+            // proceed (but skip if is internal staff message)
             Object[] args = {arguments[0], unwrappedMessage};
             Object result = pjp.proceed(args);
 
@@ -111,7 +116,7 @@ public class ActorXSubstitute {
             // Clean actor x
             ActorXDirectorOffice.removeActorXDirector();
             if (actorXDirector != null) {
-                actorXDirector.clean(); // DO NOT FORGET SETUP
+                //actorXDirector.clean(); // DO NOT FORGET SETUP
             }
 
             // Trace Logging

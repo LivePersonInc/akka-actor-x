@@ -26,6 +26,7 @@
 
     <!-- 4. Message Trail -->
     <logger name="com.liveperson.infra.akka.actorx.role.MessageTrailRole" level="TRACE" />
+    <logger name="com.liveperson.infra.akka.actorx" level="DEBUG" />
 
     <root>
         <level value="INFO" />

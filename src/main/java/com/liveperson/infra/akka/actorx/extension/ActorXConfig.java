@@ -19,6 +19,9 @@ public class ActorXConfig {
 
     private static Logger logger = LoggerFactory.getLogger(ActorXConfig.class);
 
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    public static final String TAB = "\t";
+
     private static final String ACTOR_X = "actor-x";
     private static final String ENHANCED_PACKAGES_INCLUDE = "enhanced-packages";
     private static final String ENHANCED_PACKAGES_EXCLUDE = "enhanced-packages-exclude";
@@ -36,13 +39,15 @@ public class ActorXConfig {
     private static final String ROLES_MESSAGE_TRAIL_TRACE_LOGGING_EXCLUDE = "packages-exclude";
     private static final String ROLES_MESSAGE_TRAIL_TRACE_LOGGING_MESSAGE_INCLUDE = "message-include";
     private static final String ROLES_MESSAGE_TRAIL_TRACE_LOGGING_MESSAGE_EXCLUDE = "message-exclude";
+    private static final String ROLES_CAST_TRACE = "cast-trace";
 
     private static final String WILDCARD_ALL = "*";
-    private static final String AKKA_PACKAGE= "akka";
+    private static final String AKKA_PACKAGE = "akka";
+    private static final String ACTOR_X_PACKAGE = "com.liveperson.infra.akka.actorx";
 
     // Include / Exclude packages
     private static Set<String> enhancedPackagesInclude = new HashSet<>(Arrays.asList(WILDCARD_ALL));
-    private static Set<String> enhancedPackagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE));
+    private static Set<String> enhancedPackagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE, ACTOR_X_PACKAGE));
 
     // Role Correlation
     private static boolean roleCorrelationActive = false;
@@ -54,10 +59,11 @@ public class ActorXConfig {
     private static boolean roleMessageTrailActive = false;
     private static boolean roleMessageTrailTraceLogging = false;
     private static int roleMessageTrailMaxHistory = 15;
-    private static Set<String> roleMessageTrailPackagesInclude = enhancedPackagesInclude;
-    private static Set<String> roleMessageTrailPackagesExclude = enhancedPackagesExclude;
+    private static Set<String> roleMessageTrailPackagesInclude = new HashSet<>(Arrays.asList(WILDCARD_ALL));
+    private static Set<String> roleMessageTrailPackagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE, ACTOR_X_PACKAGE));
     private static Set<String> roleMessageTrailMessagesInclude = new HashSet<>(Arrays.asList(WILDCARD_ALL));
-    private static Set<String> roleMessageTrailMessagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE));
+    private static Set<String> roleMessageTrailMessagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE, ACTOR_X_PACKAGE));
+    private static boolean castTraceActive = false;
 
 
     public static Set<String> getEnhancedPackagesInclude() {
@@ -112,6 +118,10 @@ public class ActorXConfig {
         return roleMessageTrailMessagesExclude;
     }
 
+    public static boolean isCastTraceActive() {
+        return castTraceActive;
+    }
+
     /**
      *
      * @param akkaConfig
@@ -123,13 +133,13 @@ public class ActorXConfig {
             // Actor X Configuration
             Config actorXConfig = akkaConfig.getConfig(ACTOR_X);
 
-            // Cast packages include
+            // Enhanced packages include
             if (actorXConfig.hasPath(ENHANCED_PACKAGES_INCLUDE)) {
                 List<String> packages = actorXConfig.getStringList(ENHANCED_PACKAGES_INCLUDE);
                 enhancedPackagesInclude = new HashSet<>(packages);
             }
 
-            // Cast packages exclude
+            // Enhanced packages exclude
             if (actorXConfig.hasPath(ENHANCED_PACKAGES_EXCLUDE)) {
                 List<String> packages = actorXConfig.getStringList(ENHANCED_PACKAGES_EXCLUDE);
                 enhancedPackagesExclude.addAll(packages);
@@ -154,6 +164,7 @@ public class ActorXConfig {
             configureRoleAkkaSourceMdc(rolesConfig);
             configureRoleCorrelation(rolesConfig);
             configureRoleMessageTrail(rolesConfig);
+            configureRoleCastTrace(rolesConfig);
         }
     }
 
@@ -235,14 +246,14 @@ public class ActorXConfig {
                 // Exclude Packages
                 if (traceLogging.hasPath(ROLES_MESSAGE_TRAIL_TRACE_LOGGING_EXCLUDE)) {
                     List<String> packages = traceLogging.getStringList(ROLES_MESSAGE_TRAIL_TRACE_LOGGING_EXCLUDE);
-                    roleMessageTrailPackagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE)) ;
+                    roleMessageTrailPackagesExclude = new HashSet<>(Arrays.asList(AKKA_PACKAGE, ACTOR_X_PACKAGE)) ;
                     roleMessageTrailPackagesExclude.addAll(packages) ;
                 }
 
                 // Include Messages
                 if (traceLogging.hasPath(ROLES_MESSAGE_TRAIL_TRACE_LOGGING_MESSAGE_INCLUDE)) {
                     List<String> packages = traceLogging.getStringList(ROLES_MESSAGE_TRAIL_TRACE_LOGGING_MESSAGE_INCLUDE);
-                    roleMessageTrailMessagesInclude.addAll(packages) ;
+                    roleMessageTrailMessagesInclude = new HashSet<>(packages);
                 }
 
                 // Exclude Messages
@@ -253,6 +264,22 @@ public class ActorXConfig {
             }
         }
     }
+
+    private static void configureRoleCastTrace(Config rolesConfig) {
+
+        // Correlation role
+        if (rolesConfig.hasPath(ROLES_CAST_TRACE)) {
+
+            // Correlation Configuration
+            Config castTraceConfig = rolesConfig.getConfig(ROLES_CAST_TRACE);
+
+            // Active
+            if (castTraceConfig.hasPath(ROLES_ACTIVE)) {
+                castTraceActive = castTraceConfig.getBoolean(ROLES_ACTIVE);
+            }
+        }
+    }
+
 
     // TODO CHECK LOGIC
     // TODO ADD CACHING?

@@ -1,5 +1,6 @@
 package com.liveperson.infra.akka.actorx.header;
 
+import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +17,6 @@ public class MessageTrailHeader {
     private static Logger logger = LoggerFactory.getLogger(MessageTrailHeader.class);
 
     public static final String HEADER_NAME = "MESSAGE_TRAIL";
-    public static final String LINE_SEPERATOR = System.getProperty("line.separator");
 
     // TODO HOW TO DEAL WITH IMMUTABLE/MUTABLE
 
@@ -58,11 +58,11 @@ public class MessageTrailHeader {
     public static String getMessageTrailString(List<Trail> messageTrail) {
         StringBuilder buffer = new StringBuilder();
         if (messageTrail != null && !messageTrail.isEmpty()) {
-            buffer.append(LINE_SEPERATOR).append(Trail.TRAIL_HEADER);
+            buffer.append(ActorXConfig.LINE_SEPARATOR).append(Trail.TRAIL_HEADER);
             for (Trail trail : messageTrail) {
-                buffer.append(LINE_SEPERATOR).append(trail.getTrailString());
+                buffer.append(ActorXConfig.LINE_SEPARATOR).append(trail.getTrailString());
             }
-            buffer.append(LINE_SEPERATOR).append(Trail.TRAIL_FOOTER);
+            buffer.append(ActorXConfig.LINE_SEPARATOR).append(Trail.TRAIL_FOOTER);
         }
         return buffer.toString();
     }
@@ -89,8 +89,8 @@ public class MessageTrailHeader {
         }
 
         static final String TRAIL_HEADER =
-                "---------------------------------------------------------------------------------------------------------" + LINE_SEPERATOR +
-                "| actor-name                     | from-actor-name                | message-class-name                  |" + LINE_SEPERATOR +
+                "---------------------------------------------------------------------------------------------------------" + ActorXConfig.LINE_SEPARATOR +
+                "| actor-name                     | from-actor-name                | message-class-name                  |" + ActorXConfig.LINE_SEPARATOR +
                 "|-------------------------------------------------------------------------------------------------------|";
 
         static final String TRAIL_FOOTER =

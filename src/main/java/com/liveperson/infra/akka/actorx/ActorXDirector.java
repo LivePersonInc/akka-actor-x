@@ -3,9 +3,12 @@ package com.liveperson.infra.akka.actorx;
 import akka.actor.*;
 import akka.pattern.PromiseActorRef;
 import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
+import com.liveperson.infra.akka.actorx.extension.ActorXExtension;
+import com.liveperson.infra.akka.actorx.extension.ActorXExtensionProvider;
 import com.liveperson.infra.akka.actorx.header.MessageTrailHeader;
 import com.liveperson.infra.akka.actorx.role.*;
 import com.liveperson.infra.akka.actorx.header.Manuscript;
+import com.liveperson.infra.akka.actorx.staff.StaffMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,23 +23,20 @@ public class ActorXDirector {
 
     private Logger logger = LoggerFactory.getLogger(ActorXDirector.class);
 
-    // This class can keep trace of all in/out actor refs
-    // It can build an internal actor web that can send internal messages
-    // TODO Should director keep track of this or should a proprietary mask do this?
-    private Set<ActorRef> in;
-    private Set<ActorRef> out;
+    private Actor enhancedActor;
+    private Roles roles;
+    private Colleagues colleagues;
+    private ActorXExtension actorXExtension;
 
-    private Actor extendedActor;
-    private RoleList maskList;
-
-    public ActorXDirector(Actor extendedActor) {
-        this.in = new HashSet<>();
-        this.out = new HashSet<>();
-        this.extendedActor = extendedActor;
+    public ActorXDirector(Actor enhancedActor) {
+        this.enhancedActor = enhancedActor;
+        this.colleagues = new Colleagues(enhancedActor);
+        this.actorXExtension = ActorXExtensionProvider.actorXExtensionProvider.get(enhancedActor.context().system());
         setup();
     }
 
     public void setup() {
+        String enhancedActorClassName = enhancedActor.getClass().getName();
         List<Role> roles = new ArrayList<>();
         if (ActorXConfig.isRoleAkkaSourceMdcActive()) {
             roles.add(new AkkaSourceMdcRole());
@@ -45,20 +45,22 @@ public class ActorXDirector {
             roles.add(new CorrelationRole());
         }
         if (ActorXConfig.isRoleMessageTrailActive()) {
-            roles.add(new MessageTrailRole(extendedActor.getClass().getName()));
+            roles.add(new MessageTrailRole(enhancedActorClassName));
         }
-        this.maskList = new RoleList(roles);
+        if (ActorXConfig.isCastTraceActive()) {
+            roles.add(new CastTraceRole(enhancedActor.self(), enhancedActorClassName, this.actorXExtension.getCastTraceActor()));
+        }
+        this.roles = new Roles(roles);
     }
 
     public void clean() {
-        this.maskList = new RoleList(Collections.emptyList());
+        this.roles = new Roles(Collections.emptyList());
     }
 
 
-
     public Object beforeReceive(Object msg) {
-        recordIn(extendedActor.sender());
-        this.maskList.beforeReceive(extendedActor.sender(), msg, extendedActor);
+        this.colleagues.recordIn(enhancedActor.sender());
+        this.roles.beforeReceive(enhancedActor.sender(), msg, enhancedActor);
 
         // Strip actor x manuscript wrapper and return original body
         if (msg instanceof ActorXManuscript) {
@@ -70,11 +72,11 @@ public class ActorXDirector {
     }
 
     public void afterReceive(Object msg) {
-        this.maskList.afterReceive(extendedActor.sender(), msg, extendedActor);
+        this.roles.afterReceive(enhancedActor.sender(), msg, enhancedActor);
     }
 
     public Object beforeSend(ActorRef recipient, Object msg, ActorRef sender) {
-        recordOut(recipient);
+        this.colleagues.recordOut(recipient);
 
         // Wrap message in manuscript if needed
         Object wrappedMessage = msg;
@@ -82,12 +84,12 @@ public class ActorXDirector {
             wrappedMessage = new ActorXManuscript(msg);
         }
 
-        this.maskList.beforeSend(recipient, wrappedMessage, sender);
+        this.roles.beforeSend(recipient, wrappedMessage, sender);
         return wrappedMessage;
     }
 
     public void afterSend(ActorRef recipient, Object msg, ActorRef sender) {
-        this.maskList.afterSend(recipient, msg, sender);
+        this.roles.afterSend(recipient, msg, sender);
     }
 
 
@@ -96,31 +98,22 @@ public class ActorXDirector {
     }
 
     public void afterActorOf(ActorRef actorRef) {
-        recordOut(actorRef);
-        this.maskList.afterActorOf(actorRef);
-    }
-
-    private void recordIn(ActorRef actorRef) {
-        if (actorRef != extendedActor.context().system().deadLetters()) {
-            in.add(actorRef);
-        }
-    }
-
-    private void recordOut(ActorRef actorRef) {
-        out.add(actorRef);
+        this.colleagues.recordOut(actorRef);
+        this.roles.afterActorOf(actorRef);
     }
 
     private boolean shouldWrapWithManuscript(ActorRef recipient, Object msg) {
-        return      !(msg instanceof AutoReceivedMessage)
-                &&  !(msg instanceof Manuscript)
-                &&  !(recipient instanceof PromiseActorRef); // akka ask pattern
+        return      !(msg instanceof AutoReceivedMessage)   // Internal akka messages
+                &&  !(msg instanceof Manuscript)            // Message already wrapped
+                &&  !(recipient instanceof PromiseActorRef) // Akka ask pattern
+                &&  !(msg instanceof StaffMessage);         // Internal Staff Messages
     }
 
     // TODO CHANGE HOW THIS WORKS
     // TODO CHANGE WHERE API IS DEFINED / IMPLEMENTED
     public List<MessageTrailHeader.Trail> getMessageTrail() {
         List<Role> messageTrailRoles =
-                maskList.getRoles().stream().filter(mask -> MessageTrailRole.class.isInstance(mask)).collect(Collectors.toList());
+                roles.getRoles().stream().filter(mask -> MessageTrailRole.class.isInstance(mask)).collect(Collectors.toList());
         if (messageTrailRoles != null) {
             LinkedList<MessageTrailHeader.Trail> messageTrail = ((MessageTrailRole) messageTrailRoles.get(0)).getMessageTrail();
             return messageTrail;
@@ -131,5 +124,29 @@ public class ActorXDirector {
     }
 
 
+    // This class can keep trace of all in/out actor refs
+    // It can build an internal actor web that can send internal messages
+    public static class Colleagues {
 
+        // TODO Should director keep track of this or should a proprietary mask do this?
+        private Set<ActorRef> in;
+        private Set<ActorRef> out;
+        private Actor extendedActor;
+
+        public Colleagues(Actor extendedActor) {
+            this.extendedActor = extendedActor;
+            this.in = new HashSet<>();
+            this.out = new HashSet<>();
+        }
+
+        public void recordIn(ActorRef actorRef) {
+            if (actorRef != extendedActor.context().system().deadLetters()) {
+                in.add(actorRef);
+            }
+        }
+
+        public void recordOut(ActorRef actorRef) {
+            out.add(actorRef);
+        }
+    }
 }

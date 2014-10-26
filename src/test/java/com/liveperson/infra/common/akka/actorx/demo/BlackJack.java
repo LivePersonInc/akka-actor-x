@@ -22,24 +22,9 @@ import java.util.List;
  */
 public class BlackJack {
 
-    /*public static void main(String[] args) {
-
-        int numPlayers = 3;
-        FiniteDuration FINITE_DURATION = JavaTestKit.duration("3000 second");
-        ActorSystem actorSystem = ActorSystem.create("test-akka-system");
-        JavaTestKit probe = new JavaTestKit(actorSystem);
-
-        ActorRef dealer = actorSystem.actorOf(DealerAbstractFsm.props(numPlayers), "dealer");
-        dealer.tell(DealerAbstractFsm.START_GAME.INSTANCE, probe.getRef());
-        probe.expectMsgAnyClassOf(FINITE_DURATION, String.class);
-
-        actorSystem.shutdown();
-        actorSystem.awaitTermination();
-    }*/
-
     public static void main(String[] args) {
 
-        int numGames = 3;
+        int numGames = 1;
         FiniteDuration FINITE_DURATION = JavaTestKit.duration("3000 second");
         ActorSystem actorSystem = ActorSystem.create("test-akka-system");
 
@@ -62,13 +47,9 @@ public class BlackJack {
         probes.stream().forEach( probe -> probe.expectMsgAnyClassOf(FINITE_DURATION, String.class) );
 
         // Log cast
-        FiniteDuration SHORT_FINITE_DURATION = JavaTestKit.duration("3 second");
+        /*ActorXBackStage.logCastNetwork(actorSystem);
         JavaTestKit probe = new JavaTestKit(actorSystem);
-        ActorXExtension actorXExtension = ActorXExtensionProvider.actorXExtensionProvider.get(actorSystem);
-        ActorRef castTraceActor = actorXExtension.getCastTraceActor();
-        Assert.assertNotNull("Trace actor assistant should not be null, check if cast-trace is enabled", castTraceActor);
-        castTraceActor.tell(CastTraceAssistant.LogCast.INSTANCE, probe.getRef());
-        probe.expectNoMsg(SHORT_FINITE_DURATION);
+        probe.expectNoMsg(JavaTestKit.duration("2 second"));*/
 
         actorSystem.shutdown();
         actorSystem.awaitTermination();

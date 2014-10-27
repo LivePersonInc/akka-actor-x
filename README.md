@@ -1,7 +1,7 @@
 akka-actor-x
 ============
 
-Akka extension providing features that help you trace, debug and monitor your actor system. Actor X is extendable and currently provides features like: 
+Akka extension providing features that help you trace, debug and monitor your actor system. Actor X is written in java, it is extendable and currently provides features like: 
 
 - Slf4j MDC: Automatically adds actor path to MDC (under akkaSource key)
 - Message trail (history): Makes message trail (history) available during debugging (break-point) and/or logging

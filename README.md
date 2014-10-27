@@ -11,4 +11,4 @@ Akka extension providing features that help you trace, debug and monitor your ac
 
 <br>Actor-X is leverages AspectJ and thus you do **NOT** have to change anything inside your code.
 <br>Just add aspectj weaver as VM options, for example:
-<br>-javaagent:"%USER_HOME%\.m2\repository\org\aspectj\aspectjweaver\1.8.1\aspectjweaver-1.8.1.jar"
+<br>-javaagent:"%USER_HOME%\\.m2\repository\org\aspectj\aspectjweaver\1.8.1\aspectjweaver-1.8.1.jar"

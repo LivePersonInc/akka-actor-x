@@ -9,19 +9,29 @@
 	<version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Akka Actor-X</name>
+    <url>https://github.com/LivePersonInc/akka-actor-x</url>
 
 	<description>
-        <!-- TODO -->
+        Akka extension providing features that help you trace, debug and monitor your actor system
     </description>
+
+    <issueManagement>
+        <url>https://github.com/LivePersonInc/akka-actor-x/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
 
     <organization>
         <name>LivePerson</name>
         <url>http://www.liveperson.com</url>
     </organization>
 
-    <contributors>
-        <!-- TODO -->
-    </contributors>
+    <developers>
+        <developer>
+            <id>amitt03</id>
+            <name>Amit Tal</name>
+            <url>https://github.com/amitt03</url>
+        </developer>
+    </developers>
 	
     <properties>
 		<akka.version>2.3.4</akka.version>
@@ -31,6 +41,12 @@
         <slf4j.version>1.7.7</slf4j.version>
         <github.global.server>github</github.global.server>
 	</properties>
+
+    <scm>
+        <url>https://github.com/LivePersonInc/akka-actor-x</url>
+        <connection>scm:git:git://github.com/LivePersonInc/akka-actor-x.git</connection>
+        <developerConnection>scm:git:git@github.com:LivePersonInc/akka-actor-x.git</developerConnection>
+    </scm>
 
     <dependencies>
 
@@ -74,6 +90,7 @@
             <artifactId>aspectjweaver</artifactId>
         </dependency>
 
+        <!-- JUnit -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

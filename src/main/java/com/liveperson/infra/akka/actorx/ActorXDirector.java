@@ -113,7 +113,7 @@ public class ActorXDirector {
     // TODO CHANGE WHERE API IS DEFINED / IMPLEMENTED
     public List<MessageTrailHeader.Trail> getMessageTrail() {
         List<Role> messageTrailRoles =
-                roles.getRoles().stream().filter(mask -> MessageTrailRole.class.isInstance(mask)).collect(Collectors.toList());
+                roles.getRoles().stream().filter(role -> MessageTrailRole.class.isInstance(role)).collect(Collectors.toList());
         if (messageTrailRoles != null) {
             LinkedList<MessageTrailHeader.Trail> messageTrail = ((MessageTrailRole) messageTrailRoles.get(0)).getMessageTrail();
             return messageTrail;
@@ -128,7 +128,7 @@ public class ActorXDirector {
     // It can build an internal actor web that can send internal messages
     public static class Colleagues {
 
-        // TODO Should director keep track of this or should a proprietary mask do this?
+        // TODO Should director keep track of this or should a proprietary role do this?
         private Set<ActorRef> in;
         private Set<ActorRef> out;
         private Actor extendedActor;

@@ -21,7 +21,7 @@ public class Roles implements Role {
     @Override
     public void beforeReceive(ActorRef from, Object message, Actor self) {
         if (this.roles != null) {
-            this.roles.stream().forEach((mask) -> mask.beforeReceive(from, message, self));
+            this.roles.stream().forEach((role) -> role.beforeReceive(from, message, self));
         }
     }
 
@@ -39,7 +39,7 @@ public class Roles implements Role {
     @Override
     public void beforeSend(ActorRef to, Object message, ActorRef from) {
         if (this.roles != null) {
-            this.roles.stream().forEach((mask) -> mask.beforeSend(to, message, from));
+            this.roles.stream().forEach((role) -> role.beforeSend(to, message, from));
         }
     }
 
@@ -57,7 +57,7 @@ public class Roles implements Role {
     @Override
     public void afterActorOf(ActorRef actorRef) {
         if (this.roles != null) {
-            this.roles.stream().forEach((mask) -> mask.afterActorOf(actorRef));
+            this.roles.stream().forEach((role) -> role.afterActorOf(actorRef));
         }
     }
 

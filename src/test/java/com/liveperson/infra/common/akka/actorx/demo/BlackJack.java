@@ -6,6 +6,8 @@ import akka.testkit.JavaTestKit;
 import com.liveperson.infra.akka.actorx.ActorXBackStage;
 import com.liveperson.infra.akka.actorx.ActorXManuscript;
 import com.liveperson.infra.akka.actorx.header.CorrelationHeader;
+import com.liveperson.infra.common.akka.actorx.demo.deck.Deck;
+import com.liveperson.infra.common.akka.actorx.demo.deck.RandomDeck;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
@@ -19,10 +21,19 @@ public class BlackJack {
 
     public static void main(String[] args) {
 
+        // Arguments
         int numGames = 1;
+        int numPlayersPerGame = 3;
+        Deck[] randomDecks = new Deck[numPlayersPerGame];
+        for (int d=0; d<numPlayersPerGame; d++) {
+            randomDecks[d] = new RandomDeck();
+        }
+
+        // Init akka
         FiniteDuration FINITE_DURATION = JavaTestKit.duration("3000 second");
         ActorSystem actorSystem = ActorSystem.create("test-akka-system");
 
+        // Execute games
         List<JavaTestKit> probes = new ArrayList<>(numGames);
         for (int i=1; i<=numGames; i++) {
 
@@ -30,8 +41,9 @@ public class BlackJack {
             JavaTestKit probe = new JavaTestKit(actorSystem);
             probes.add(probe);
 
-            // Construct
-            ActorRef dealer = actorSystem.actorOf(DealerAbstractFsm.props(3), "dealer" + i);
+            // Construct dealer
+
+            ActorRef dealer = actorSystem.actorOf(DealerAbstractFsm.props(randomDecks, numPlayersPerGame), "dealer" + i);
 
             // Run
             dealer.tell(DealerAbstractFsm.START_GAME.INSTANCE, probe.getRef());
@@ -43,7 +55,7 @@ public class BlackJack {
         }
 
         // Wait for all games to finish
-        probes.stream().forEach( probe -> probe.expectMsgAnyClassOf(FINITE_DURATION, String.class) );
+        probes.stream().forEach( probe -> probe.expectMsgAnyClassOf(FINITE_DURATION, DealerAbstractFsm.GAME_ENDED.class) );
 
         // Log cast
         /*ActorXBackStage.logCastNetwork(actorSystem);

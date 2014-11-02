@@ -8,10 +8,10 @@
         <encoder>
 
             <!-- 1. Akka Source -->
-            <!--<pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-25.25thread] [%-32.32X{akkaSource}]      %msg%n</pattern>-->
+            <pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-25.25thread] [%-32.32X{akkaSource}]      %msg%n</pattern>
 
             <!-- 2. Correlation Id -->
-            <pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-32.32X{akkaSource}]      %msg     |TAGS| %X{GAME} %n</pattern>
+            <!--<pattern>%date{ISO8601} %-5level [%-30.30logger{30}] [%-32.32X{akkaSource}]      %msg     |TAGS| %X{GAME} %n</pattern>-->
 
         </encoder>
     </appender>

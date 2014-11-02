@@ -72,8 +72,8 @@ public class PlayerAbstractActor extends AbstractActor {
     }
 
     private void card(CARD card) {
-        logger.info("Received card {}", card.value);
         this.totalHand += card.value;
+        logger.info("Received card {} (total={})", card.value, this.totalHand);
     }
 
     private void play(PLAY play) {
@@ -87,7 +87,7 @@ public class PlayerAbstractActor extends AbstractActor {
             GameUtil.cheatEnabled(); // Just making a point
             this.originalSender = sender();
             ActorRef luckCoin = context().actorOf(LuckCoinUntypedActor.props(), "coin-"+self().path().name()+(coinIndex++));
-            luckCoin.tell(LuckCoinUntypedActor.FLIP.INSTANCE, self());
+            luckCoin.tell(new LuckCoinUntypedActor.FLIP(this.totalHand), self());
         }
         else {
             sender().tell(DealerAbstractFsm.HIT.INSTANCE, self());

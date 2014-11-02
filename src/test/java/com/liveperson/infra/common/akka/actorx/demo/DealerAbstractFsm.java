@@ -1,6 +1,7 @@
 package com.liveperson.infra.common.akka.actorx.demo;
 
 import akka.actor.*;
+import com.liveperson.infra.common.akka.actorx.demo.deck.Deck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,28 +34,59 @@ public class DealerAbstractFsm extends AbstractFSM<DealerAbstractFsm.State, Stri
         INSTANCE
     }
 
+    public static class GAME_ENDED {
+
+        String winner;
+        Integer hand;
+
+        public GAME_ENDED(String winner, Integer hand) {
+            this.winner = winner;
+            this.hand = hand;
+        }
+
+        public String getWinner() {
+            return winner;
+        }
+
+        public Integer getHand() {
+            return hand;
+        }
+    }
+
     enum State {
         START,
         DEAL_CARDS,
         END
     }
 
-    public static Props props(int numPlayers) {
-        return Props.create(DealerAbstractFsm.class, numPlayers);
+
+
+    public static Props props(Deck[] decks, int numPlayers) {
+        return Props.create(DealerAbstractFsm.class, decks, numPlayers);
     }
 
+    private Deck[] decks;
     private Integer numPlayers;
     private int numOfPlayersToPlay;
     private Set<ActorRef> players;
     private Map<ActorRef, Integer> stoppedPlayers;
     private ActorRef originalSender;
+    private GAME_ENDED gameEndedMessage;
 
-    public DealerAbstractFsm(Integer numPlayers) {
+    public DealerAbstractFsm(Deck[] decks, Integer numPlayers) {
 
+        this.decks = decks;
         this.numPlayers = numPlayers;
         this.numOfPlayersToPlay = numPlayers;
         this.players = new HashSet<>(numPlayers);
         this.stoppedPlayers = new HashMap<>(numPlayers);
+        this.gameEndedMessage = new GAME_ENDED("none", -1);
+
+        // Validate
+        if (this.decks == null || this.numPlayers == null || this.numPlayers == 0 || this.decks.length != this.numPlayers) {
+            logger.error("Illegal dealer argument: numPlayers={}, decks={}", this.numPlayers, this.decks);
+            throw new IllegalArgumentException("Illegal dealer arguments");
+        }
 
         logger.info("Creating blackjack game for {} players", numPlayers);
         startWith(State.START, null);
@@ -70,7 +102,7 @@ public class DealerAbstractFsm extends AbstractFSM<DealerAbstractFsm.State, Stri
         logger.info("Staring players");
         this.originalSender = sender();
         for (int i=0; i<numPlayers; i++) {
-            ActorRef actorRef = context().actorOf(PlayerAbstractActor.props(generateCard(), generateCard()), "player-" + (i + 1));
+            ActorRef actorRef = context().actorOf(PlayerAbstractActor.props(decks[i].nextCard(), decks[i].nextCard()), "player-" + (i + 1));
             this.players.add(actorRef);
             actorRef.tell(PlayerAbstractActor.PLAY.INSTANCE, self());
         }
@@ -78,8 +110,11 @@ public class DealerAbstractFsm extends AbstractFSM<DealerAbstractFsm.State, Stri
     }
 
     private FSM.State<State, String> hit(HIT hit, String data) {
-        logger.info("Player {} requested a card", sender().path().name());
-        sender().tell(new PlayerAbstractActor.CARD(generateCard()), self());
+        final String actorName = sender().path().name();
+        logger.info("Player {} requested a card", actorName);
+        String actorNumber = actorName.substring("player-".length());
+        int playerIndex = Integer.parseInt(actorNumber);
+        sender().tell(new PlayerAbstractActor.CARD(decks[playerIndex-1].nextCard()), self());
         numOfPlayersToPlay--;
         return playRound();
     }
@@ -128,6 +163,7 @@ public class DealerAbstractFsm extends AbstractFSM<DealerAbstractFsm.State, Stri
                 }
 
                 logger.info("The winner is {} with a hand of {}", winningActor.path().name(), winningHand);
+                gameEndedMessage = new GAME_ENDED(winningActor.path().name(), winningHand);
                 winningActor.tell(PlayerAbstractActor.WIN.INSTANCE, self());
                 for (ActorRef looser : stoppedPlayers.keySet()) {
                     if (looser != winningActor) {
@@ -144,14 +180,9 @@ public class DealerAbstractFsm extends AbstractFSM<DealerAbstractFsm.State, Stri
     }
 
     private FSM.State<State, String> end() {
-        originalSender.tell("Done", self());
+        originalSender.tell(gameEndedMessage, self());
         self().tell(PoisonPill.getInstance(), ActorRef.noSender());
         return goTo(State.END);
-    }
-
-    private int generateCard() {
-        Random random = new Random();
-        return random.nextInt(10) + 1;
     }
 }
 

@@ -35,7 +35,8 @@ Akka extension providing features that help you trace, debug and monitor your ac
 ```
 
 ###You can enable/disable actor-x roles by editing akka configuration file
-<br>Following is an example of akka configuration file containing actor-x
+<br>Following is an example of akka configuration file containing actor-x:
+<br>(You can also see a demo inside test package (<a href="src/test/java/com/liveperson/infra/common/akka/actorx/demo/BlackJack.java">BlackJack</a>) and play with the test configuration (<a href="src/test/resources/application.conf">application.conf</a>))
 
 ```yml
 akka {
@@ -73,26 +74,26 @@ actor-x {
     # Adds actor self path to MDC under "akkaSource" key
     # Default is false (not enabled)
     akka-source-mdc {
-      #active = true
+      active = true
     }
 
     # Correlation Role
     # In charge of delegating correlation ids throughout the akka system
     # Default is false (not enabled)
     correlation {
-      #active = true
+      active = true
 
       # New request feature
       # Adds a new random correlation id with specified name, if such correlation does not already exist
       # Default is false (not enabled)
-      #create-new-request = true
-      #create-new-header-name = "GAME"
+      create-new-request = true
+      create-new-header-name = "GAME"
     }
 
     # Message Trail Role
     # Default is false (not enabled)
     message-trail {
-      #active = true
+      active = true
 
       # Max message trail history
       # Default is 15
@@ -104,15 +105,15 @@ actor-x {
       # Notice: package "com.liveperson.infra.akka.actorx.role.MessageTrailRole" needs to be configured to TRACE level in your logging configuration in order to see logging
       # Default is false (not enabled)
       trace-logging {
-        #active = true
+        active = true
 
         # String list of packages
         # If parameter is emitted or value is "*" then trail is printed for all packages in classpath
-        #packages-include = ["*"]
+        packages-include = ["*"]
 
         # String list of packages
         # By default, "akka" package is added to this list
-        #packages-exclude = ["akka"]
+        packages-exclude = ["akka"]
 
         # String list of packages
         # If parameter is emitted or value is "*" then trail is printed for all messages
@@ -128,7 +129,7 @@ actor-x {
     # Enables to trace the akka system network graph and to print it to log
     # Default is false (not enabled)
     cast-trace {
-      #active = true
+      active = true
     }
   }
 }

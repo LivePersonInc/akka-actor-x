@@ -21,7 +21,7 @@ Akka extension providing features that help you trace, debug and monitor your ac
 </dependency>  
 ```  
 ###Enable aspectj load time weaver
-<br>Add to VM options the path to aspectjweaver jar, for example:
+Add to VM options the path to aspectjweaver jar, for example:
  
 ```java
   -javaagent:~\.m2\repository\org\aspectj\aspectjweaver\1.8.1\aspectjweaver-1.8.1.jar
@@ -35,7 +35,7 @@ Akka extension providing features that help you trace, debug and monitor your ac
 ```
 
 ###You can enable/disable actor-x roles by editing akka configuration file
-<br>Following is an example of akka configuration file containing actor-x:
+Following is an example of akka configuration file containing actor-x:
 <br>(You can also see a demo inside test package (<a href="src/test/java/com/liveperson/infra/common/akka/actorx/demo/BlackJack.java">BlackJack</a>) and play with the test configuration (<a href="src/test/resources/application.conf">application.conf</a>))
 
 ```yml

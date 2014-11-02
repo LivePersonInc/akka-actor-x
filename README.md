@@ -37,7 +37,7 @@ Akka extension providing features that help you trace, debug and monitor your ac
 ###You can enable/disable actor-x roles by editing akka configuration file
 <br>Following is an example of akka configuration file containing actor-x
 
-```
+```yml
 akka {
 
   loglevel = "DEBUG"

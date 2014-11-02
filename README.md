@@ -28,7 +28,7 @@ Add to VM options the path to aspectjweaver jar, for example:
 ```
 
 ###Add Actor-X as akka extension and configure it
-<br>Inside akka configuration file define actor-x as akka extension:
+Inside akka configuration file define actor-x as akka extension:
 
 ```java
   extensions = ["com.liveperson.infra.akka.actorx.extension.ActorXExtensionProvider"]

@@ -7,7 +7,7 @@
     </aspects>
 
     <weaver options="-XnoInline">
-        <include within="com.liveperson..*"/>
+        <include within="com.liveperson..*"/> <!-- TODO not generic -->
         <include within="akka..*"/>
 
         <exclude within="akka.util.ByteString"/>

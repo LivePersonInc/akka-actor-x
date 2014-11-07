@@ -6,6 +6,7 @@ import com.liveperson.infra.akka.actorx.extension.ActorXExtension;
 import com.liveperson.infra.akka.actorx.extension.ActorXExtensionProvider;
 import com.liveperson.infra.akka.actorx.header.MessageTrailHeader;
 import com.liveperson.infra.akka.actorx.staff.CastTraceAssistant;
+import com.liveperson.infra.akka.actorx.substitute.ActorXSubstitute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,5 +45,12 @@ public class ActorXBackStage {
         else {
             logger.info("Cannot log cast network, check if feature is enabled");
         }
+    }
+
+    public static String getActorRefClassName(ActorRef actorRef) {
+        if (actorRef != null && actorRef instanceof ActorXSubstitute.ActorRefIdentifier) {
+            return ((ActorXSubstitute.ActorRefIdentifier)actorRef).getActorRefClassName();
+        }
+        return null;
     }
 }

@@ -1,7 +1,7 @@
 package com.liveperson.infra.akka.actorx.staff;
 
 import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
+import akka.actor.ActorPath;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
@@ -18,8 +18,8 @@ public class CastTraceAssistant extends AbstractActor {
 
     private Logger logger = LoggerFactory.getLogger(CastTraceAssistant.class);
 
-    private Map<ActorRef, String> lookupActorClassNameByRef;
-    private Set<Scene> unprocessedScenes;
+    private Map<ActorPath, String> lookupActorClassNameByPath;
+    private Set<Edge> unprocessedEdges;
     private Map<String, Map<String, Set<String>>> castConnectionList;
     private int numOfReceivedScenes;
 
@@ -29,51 +29,51 @@ public class CastTraceAssistant extends AbstractActor {
 
 
     public CastTraceAssistant() {
-        this.lookupActorClassNameByRef = new HashMap<>();
+        this.lookupActorClassNameByPath = new HashMap<>();
         this.castConnectionList = new HashMap<>();
-        this.unprocessedScenes = new HashSet<>();
+        this.unprocessedEdges = new HashSet<>();
         this.numOfReceivedScenes = 0;
         receive(ReceiveBuilder
-                .match(Scene.class, this::receiveScene)
+                .match(Edge.class, this::receiveEdge)
                 .match(LogCast.class, this::logCast)
                 .build());
     }
 
-    private void receiveScene(Scene scene) {
+    private void receiveEdge(Edge edge) {
         this.numOfReceivedScenes++;
-        lookupActorClassNameByRef.put(scene.getFromActorSelfRef(), scene.getFromActorClassName());
-        final Map<String, Set<String>> previousValue = castConnectionList.putIfAbsent(scene.getFromActorClassName(), new HashMap<>());
+        lookupActorClassNameByPath.put(edge.getFromActorPath(), edge.getFromActorClassName());
+        final Map<String, Set<String>> previousValue = castConnectionList.putIfAbsent(edge.getFromActorClassName(), new HashMap<>());
 
-        if (!(addActorConnection(scene))) {
-            unprocessedScenes.add(scene);
+        if (!(addActorConnection(edge))) {
+            unprocessedEdges.add(edge);
         }
     }
 
     private void processUnprocessedScenes() {
-        Iterator<Scene> sceneIterator = unprocessedScenes.iterator();
+        Iterator<Edge> sceneIterator = unprocessedEdges.iterator();
         while (sceneIterator.hasNext()) {
-            Scene scene = sceneIterator.next();
-            if (addActorConnection(scene)) {
+            Edge edge = sceneIterator.next();
+            if (addActorConnection(edge)) {
                 sceneIterator.remove();
             }
         }
     }
 
-    private boolean addActorConnection(Scene scene) {
+    private boolean addActorConnection(Edge edge) {
 
         // If to actor ref is in actor lookup list then can process scene
-        if (lookupActorClassNameByRef.containsKey(scene.getToActorRef())) {
+        if (lookupActorClassNameByPath.containsKey(edge.getToActorPath())) {
 
             // to actor class name
-            String toActorClassName = lookupActorClassNameByRef.get(scene.getToActorRef());
+            String toActorClassName = lookupActorClassNameByPath.get(edge.getToActorPath());
 
             // If needed, add to actor as connection
-            Map<String, Set<String>> actorConnections = castConnectionList.get(scene.getFromActorClassName());
+            Map<String, Set<String>> actorConnections = castConnectionList.get(edge.getFromActorClassName());
             actorConnections.putIfAbsent(toActorClassName, new HashSet<>());
 
             // Add scene message
             Set<String> messages = actorConnections.get(toActorClassName);
-            messages.add(scene.getMessageClassName());
+            messages.add(edge.getMessageClassName());
             return true;
         }
         else {
@@ -141,17 +141,17 @@ public class CastTraceAssistant extends AbstractActor {
         }
 
         // Unprocessed scene
-        if (!unprocessedScenes.isEmpty()) {
+        if (!unprocessedEdges.isEmpty()) {
 
             buffer.append("The following contains unknown actor classes (actor-refs)")
                   .append(ActorXConfig.LINE_SEPARATOR)
                   .append("---------------------------------------------------------")
                   .append(ActorXConfig.LINE_SEPARATOR).append(ActorXConfig.LINE_SEPARATOR);
 
-            unprocessedScenes.stream().forEach(scene -> {
+            unprocessedEdges.stream().forEach(scene -> {
                 buffer.append(getClassName(scene.fromActorClassName)).append(ActorXConfig.LINE_SEPARATOR);
                 buffer.append("|").append(ActorXConfig.LINE_SEPARATOR);
-                String actorRefPath = (scene.getToActorRef()) != null ? scene.getToActorRef().path().name() : null;
+                String actorRefPath = (scene.getToActorPath()) != null ? scene.getToActorPath().name() : null;
                 buffer.append("|---  ").append(actorRefPath).append(ActorXConfig.LINE_SEPARATOR);
                 buffer.append("|------   ").append(getClassName(scene.getMessageClassName())).append(ActorXConfig.LINE_SEPARATOR);
                 buffer.append(ActorXConfig.LINE_SEPARATOR);
@@ -197,11 +197,11 @@ public class CastTraceAssistant extends AbstractActor {
             }
 
             int index = 0;
-            for (Scene scene : unprocessedScenes) {
+            for (Edge edge : unprocessedEdges) {
 
-                String fromActor = scene.fromActorClassName;
-                String toActor = (scene.getToActorRef()) != null ? scene.getToActorRef().path().name() : "unknown:" + (index++);
-                String message = scene.getMessageClassName();
+                String fromActor = edge.fromActorClassName;
+                String toActor = (edge.getToActorPath()) != null ? edge.getToActorPath().name() : "unknown:" + (index++);
+                String message = edge.getMessageClassName();
                 edgesBuffer.append(message).append("|").append(fromActor).append("|").append(toActor).append(",");
             }
 
@@ -232,40 +232,40 @@ public class CastTraceAssistant extends AbstractActor {
         }
     }
 
-    public static class Scene implements StaffMessage {
+    public static class Edge implements StaffMessage {
 
         private final String fromActorClassName;
-        private final ActorRef fromActorSelfRef;
+        private final ActorPath fromActorPath;
         private final String messageClassName;
-        private final ActorRef toActorRef;
+        private final ActorPath toActorPath;
+        private final Date date;
 
-        public Scene(String fromActorClassName, ActorRef fromActorSelfRef) {
-            this.fromActorClassName = fromActorClassName;
-            this.fromActorSelfRef = fromActorSelfRef;
-            this.messageClassName = null;
-            this.toActorRef = null;
+        Edge(String fromActorClassName, ActorPath fromActorPath) {
+            this(fromActorClassName, fromActorPath, null, null);
         }
 
-        public Scene(String fromActorClassName, ActorRef fromActorSelfRef, ActorRef toActorRef) {
-            this.fromActorClassName = fromActorClassName;
-            this.fromActorSelfRef = fromActorSelfRef;
-            this.messageClassName = null;
-            this.toActorRef = toActorRef;
+        Edge(String fromActorClassName, ActorPath fromActorPath, ActorPath toActorPath) {
+            this(fromActorClassName, fromActorPath, null, toActorPath);
         }
 
-        public Scene(String fromActorClassName, ActorRef fromActorSelfRef, String messageClassName, ActorRef toActorRef) {
+        public Edge(String fromActorClassName, ActorPath fromActorPath, String messageClassName, ActorPath toActorPath) {
             this.fromActorClassName = fromActorClassName;
-            this.fromActorSelfRef = fromActorSelfRef;
+            this.fromActorPath = fromActorPath;
             this.messageClassName = messageClassName;
-            this.toActorRef = toActorRef;
+            this.toActorPath = toActorPath;
+            this.date = new Date();
         }
 
         public String getFromActorClassName() {
             return fromActorClassName;
         }
 
-        public ActorRef getFromActorSelfRef() {
-            return fromActorSelfRef;
+        public ActorPath getFromActorPath() {
+            return fromActorPath;
+        }
+
+        public ActorPath getToActorPath() {
+            return toActorPath;
         }
 
         public String getMessageClassName() {
@@ -274,9 +274,17 @@ public class CastTraceAssistant extends AbstractActor {
             }
             return messageClassName;
         }
+    }
 
-        public ActorRef getToActorRef() {
-            return toActorRef;
+    public static class ActorOfEdge extends Edge {
+        public ActorOfEdge(String fromActorClassName, ActorPath fromActorPath, ActorPath toActorPath) {
+            super(fromActorClassName, fromActorPath, null, toActorPath);
+        }
+    }
+
+    public static class IdentifierEdge extends Edge {
+        public IdentifierEdge(String fromActorClassName, ActorPath fromActorPath) {
+            super(fromActorClassName, fromActorPath, null, null);
         }
     }
 }

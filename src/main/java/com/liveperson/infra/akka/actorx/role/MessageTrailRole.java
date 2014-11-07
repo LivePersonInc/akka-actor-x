@@ -36,7 +36,7 @@ public class MessageTrailRole implements Role {
         if (message instanceof Manuscript) {
             List<MessageTrailHeader.Trail> origTrail = MessageTrailHeader.getHeader((Manuscript) message);
             if (origTrail != null) {
-                this.messageTrail = new LinkedList(origTrail);
+                this.messageTrail = new LinkedList<>(origTrail);
             }
         }
 

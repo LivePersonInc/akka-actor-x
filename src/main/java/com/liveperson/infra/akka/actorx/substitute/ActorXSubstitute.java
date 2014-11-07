@@ -30,12 +30,12 @@ public class ActorXSubstitute {
     // TODO How can I change this so we will wrap all actors EXCEPT all actor-x internal actors?
     // TODO Currently there is one (CastTraceAssistant) but each time we add another then this needs to be updated
     @Pointcut("target(com.liveperson.infra.akka.actorx.staff.CastTraceAssistant)")
-    public void internalActorX() {}
+    public void internalActorXPC() {}
 
     @Pointcut("execution(* akka.actor.Actor.aroundReceive(..))")
     public void aroundReceivePC() {}
 
-    @Around("aroundReceivePC() && !internalActorX()")
+    @Around("aroundReceivePC() && !internalActorXPC()")
     public Object doAround(ProceedingJoinPoint pjp) throws Throwable {
 
         // Should not happen, just safety check
@@ -82,9 +82,14 @@ public class ActorXSubstitute {
             ActorContext context = actor.context();
             ActorXHiddenRoom actorXHiddenRoom = (ActorXHiddenRoom)context;
             actorXDirector = actorXHiddenRoom.getActorXDirector();
+            // First time init
             if (actorXDirector == null) {
                 actorXDirector = new ActorXDirector(actor);
                 actorXHiddenRoom.setActorXDirector(actorXDirector);
+
+                // Store inside actor ref its actor class name (really helps in debug)
+                ActorRefIdentifier refIdentifier = (ActorRefIdentifier)actor.self();
+                refIdentifier.setActorRefClassName(targetClass);
             }
             //actorXDirector.setup(); // DO NOT FORGET CLEAN
             ActorXDirectorOffice.setActorXDirector(actorXDirector);
@@ -128,12 +133,12 @@ public class ActorXSubstitute {
 
     @DeclareMixin("akka.actor.ActorCell")
     public static ActorXHiddenRoom actorXHiddenRoomMixin(Object actorCell) {
-        tracePrintCreation(actorCell);
+        tracePrintActorCreation(actorCell);
         return new ActorXHiddenRoomImpl();
     }
 
     // Trace logging for debugging
-    private static void tracePrintCreation(Object actorCell) {
+    private static void tracePrintActorCreation(Object actorCell) {
         if (logger.isTraceEnabled()) {
             if (actorCell != null && actorCell instanceof ActorCell) {
                 String cellPath = null;
@@ -166,5 +171,45 @@ public class ActorXSubstitute {
         }
     }
 
+
+
+    @DeclareMixin("akka.actor.ActorRef")
+    public static ActorRefIdentifier actorRefIdentifierMixin(Object actorRef) {
+        tracePrintActorRefCreation(actorRef);
+        return new ActorRefIdentifierImpl();
+    }
+
+    private static void tracePrintActorRefCreation(Object actorRef) {
+        if (logger.isTraceEnabled()) {
+            if (actorRef != null && actorRef instanceof ActorRef) {
+                String path = null;
+                ActorRef ref = (ActorRef)actorRef;
+                if (ref.path() != null) {
+                    path = ref.path().name();
+                }
+                logger.trace("[{}] creating actor-ref-identifier", path);
+            }
+        }
+    }
+
+    public interface ActorRefIdentifier {
+        String getActorRefClassName();
+        void setActorRefClassName(String actorRefClassName);
+    }
+
+    public static class ActorRefIdentifierImpl implements ActorRefIdentifier {
+
+        private String actorRefClassName;
+
+        @Override
+        public String getActorRefClassName() {
+            return this.actorRefClassName;
+        }
+
+        @Override
+        public void setActorRefClassName(String actorRefClassName) {
+            this.actorRefClassName = actorRefClassName;
+        }
+    }
 
 }

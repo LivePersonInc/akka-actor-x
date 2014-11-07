@@ -1,14 +1,17 @@
 package com.liveperson.infra.akka.actorx;
 
-import akka.actor.*;
+import akka.actor.Actor;
+import akka.actor.ActorRef;
+import akka.actor.AutoReceivedMessage;
+import akka.actor.Props;
 import akka.pattern.PromiseActorRef;
 import com.liveperson.infra.akka.actorx.extension.ActorXConfig;
 import com.liveperson.infra.akka.actorx.extension.ActorXExtension;
 import com.liveperson.infra.akka.actorx.extension.ActorXExtensionProvider;
+import com.liveperson.infra.akka.actorx.header.Manuscript;
 import com.liveperson.infra.akka.actorx.header.MessageTrailHeader;
 import com.liveperson.infra.akka.actorx.role.*;
-import com.liveperson.infra.akka.actorx.header.Manuscript;
-import com.liveperson.infra.akka.actorx.staff.StaffMessage;
+import com.liveperson.infra.akka.actorx.staff.AssistantUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +109,7 @@ public class ActorXDirector {
         return      !(msg instanceof AutoReceivedMessage)   // Internal akka messages
                 &&  !(msg instanceof Manuscript)            // Message already wrapped
                 &&  !(recipient instanceof PromiseActorRef) // Akka ask pattern
-                &&  !(msg instanceof StaffMessage);         // Internal Staff Messages
+                &&  !(AssistantUtils.isInternalStaffMessage(msg)); // Internal Staff Messages
     }
 
     // TODO CHANGE HOW THIS WORKS

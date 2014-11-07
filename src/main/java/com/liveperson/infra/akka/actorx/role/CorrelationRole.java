@@ -58,6 +58,8 @@ public class CorrelationRole implements Role {
                 correlationIds.put(ActorXConfig.getRoleCorrelationCreateNewRequestHeaderName(), requestId);
                 logger.trace("Created new request-id header [{}] with id [{}]", ActorXConfig.getRoleCorrelationCreateNewRequestHeaderName(), requestId);
             }
+
+            // TODO Add to MDC
         }
     }
 

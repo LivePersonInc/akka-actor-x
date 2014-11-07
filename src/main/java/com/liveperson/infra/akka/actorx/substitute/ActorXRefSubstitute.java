@@ -41,9 +41,12 @@ public class ActorXRefSubstitute {
         String msgClassName = (msg == null) ? "null" : msg.getClass().getName();
         logger.trace("[{}] before tell(msg # sender) : {} # {}", actorRefPath, msgClassName, senderPath);
 
-        // If is internal staff messages then DO NOT delegate back into the ActorXDirector
-        // This can cause an endless loop
-        if (AssistantUtils.isInternalStaffMessage(msg)) {
+        // Check scenarios to ignore actor-x decorations:
+        // 1. If actor-ref is dead-letters (bug fix #1)
+        //      NOTICE: currently a simple NOT full proof check is done -> check if actor-ref path ends with "/deadLetters"
+        // 2. If is internal staff messages then DO NOT delegate back into the ActorXDirector
+        if ((actorRef.path() != null && actorRef.path().toString().endsWith("/deadLetters")) ||
+            AssistantUtils.isInternalStaffMessage(msg)) {
             return pjp.proceed();
         }
 
